@@ -1,12 +1,19 @@
 from tkinter import *
 from tkinter import messagebox
 import pyglet
+import json
 
 
 def close_window():
     if messagebox.askokcancel("", "Выйти из приложения?"):
         master.destroy()
+        app_info["record"] = record
+        with open('app_info.json', 'w') as f:
+            json.dump(app_info, f)
 
+
+with open('app_info.json') as f:
+    app_info = json.load(f)
 
 W, H = 10, 20
 TILE = 45
@@ -14,13 +21,14 @@ GAME_RES = W * TILE, H * TILE
 RES = 750, 940
 FPS = 60
 score = 0
+record = app_info["record"]
 
 pyglet.font.add_file("font/font.ttf")
 master = Tk()
 master.protocol("WM_DELETE_WINDOW", close_window)
 master.resizable(False, False)
 master.wm_attributes("-topmost", 1)
-master.title("Tetris")
+master.title("Tetris" + " " + app_info["version"])
 canvas = Canvas(master, width=RES[0], height=RES[1], bg="red", highlightthickness=0)
 canvas.pack()
 
@@ -37,8 +45,6 @@ for i in grid:
 canvas.create_text(505, 30, text="TETRIS", fill="#1a9f2c", font=("a_BighausTitul", 55), anchor=NW)
 canvas.create_text(530, 650, text="Record:", fill="#f4e635", font=("a_BighausTitul", 35), anchor=NW)
 canvas.create_text(525, 780, text="Score:", fill="#23d13b", font=("a_BighausTitul", 35), anchor=NW)
-#temp
-record = 0
 
 canvas.create_text(530, 710, text=str(record), fill="#f4e635", font=("a_BighausTitul", 32), anchor=NW)
 canvas.create_text(525, 840, text=str(score), fill="#23d13b", font=("a_BighausTitul", 32), anchor=NW)
