@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import pyglet
 import json
+import random
 
 
 def close_window():
@@ -10,6 +11,16 @@ def close_window():
         app_info["record"] = record
         with open('app_info.json', 'w') as f:
             json.dump(app_info, f)
+
+
+def get_color():
+    return "#%06x" % random.randint(0, 0xFFFFFF)
+
+
+def game_over():
+    global grid
+    for i in grid:
+        master.after(1, canvas.itemconfigure(i, fill=get_color()))
 
 
 with open('app_info.json') as f:
