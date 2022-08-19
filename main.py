@@ -32,6 +32,10 @@ def game_over():
     # app_running = False
     for i in grid:
         master.after(1, game_sc.itemconfigure(i, fill=get_color()))
+        master.update()
+    set_record()
+    for i in grid:
+        game_sc.itemconfigure(i, fill="")
 
 
 with open('app_info.json') as f:
@@ -80,8 +84,8 @@ scores = {0: 0, 1: 100, 2: 300, 3: 700, 4: 1500}
 sc.create_text(505, 30, text="TETRIS", fill="#1a9f2c", font=("a_BighausTitul", 55), anchor=NW)
 sc.create_text(530, 650, text="Record:", fill="#f4e635", font=("a_BighausTitul", 35), anchor=NW)
 sc.create_text(525, 780, text="Score:", fill="#23d13b", font=("a_BighausTitul", 35), anchor=NW)
-sc.create_text(530, 710, text=str(record), fill="#f4e635", font=("a_BighausTitul", 32), anchor=NW)
-sc.create_text(525, 840, text=str(score), fill="#23d13b", font=("a_BighausTitul", 32), anchor=NW)
+record_t = sc.create_text(530, 710, text=str(record), fill="#f4e635", font=("a_BighausTitul", 32), anchor=NW)
+score_t = sc.create_text(525, 840, text=str(score), fill="#23d13b", font=("a_BighausTitul", 32), anchor=NW)
 
 figure, next_figure = deepcopy(choice(figures)), deepcopy(choice(figures))
 color, next_color = get_color(), get_color()
@@ -132,11 +136,13 @@ dx, rotate = 0, False
 while app_running:
     if app_running:
         # move x
+        state = 1
         figure_old = deepcopy(figure)
         for i in range(4):
             figure[i][0] += dx
             if not checkborders():
                 figure = deepcopy(figure_old)
+        state = 0
         # move y
         anim_count += anim_speed
         if anim_count > anim_limit:
@@ -187,11 +193,38 @@ while app_running:
             fig.append(
                 game_sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
                                          fill=color))
+        # draw field
+        for y, raw in enumerate(field):
+            for x, col in enumerate(raw):
+                if col:
+                    figure_rect_x, figure_rect_y = x * TILE, y * TILE
+                    fig.append(
+                        game_sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE,
+                                                 figure_rect_y + TILE, fill=col))
+        fig2 = []
+        for i in range(4):
+            figure_rect_x = next_figure[i][0] * TILE + 380
+            figure_rect_y = next_figure[i][1] * TILE + 185
+            fig2.append(sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
+                                            fill=next_color))
+        # draw titles
+        sc.itemconfigure(score_t, text=str(score))
+        set_record()
+        record = app_info["record"]
+        sc.itemconfigure(record_t, text=str(record))
+        # game over
+        for i in range(W):
+            if field[0][i]:
+                field = [[0 for j in range(W)] for k in range(H)]
+                anim_count, anim_speed, anim_limit = 0, 60, 2000
+                score = 0
+                game_over()
 
         dx, rotate = 0, False
         master.update_idletasks()
         master.update()
         for id_fig in fig:
             game_sc.delete(id_fig)
+        for id_fig in fig2:
+            sc.delete(id_fig)
     time.sleep(0.01)
-# mainloop()
