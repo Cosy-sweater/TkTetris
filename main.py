@@ -8,6 +8,7 @@ from copy import deepcopy
 
 
 def close_window():
+    global app_running
     if messagebox.askokcancel("", "Выйти из приложения?"):
         master.destroy()
         app_running = False
