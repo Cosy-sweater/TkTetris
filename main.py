@@ -5,6 +5,7 @@ import json
 import random
 from random import choice
 from copy import deepcopy
+import time
 
 
 def close_window():
@@ -27,8 +28,8 @@ def get_color():
 
 
 def game_over():
-    global grid#, app_running
-    #app_running = False
+    global grid  # , app_running
+    # app_running = False
     for i in grid:
         master.after(1, game_sc.itemconfigure(i, fill=get_color()))
 
@@ -113,21 +114,84 @@ def move_obj(event):
         rotate = True
     if event.keysym == "a":
         dx = -1
+        time.sleep(0.001)
     if event.keysym == "s":
         anim_limit = 100
     if event.keysym == "d":
         dx = 1
+        time.sleep(0.001)
 
 
 game_sc.bind_all("<KeyPress-w>", move_obj)
-game_sc.bind_all("<KeyPress-w>", move_obj)
-game_sc.bind_all("<KeyPress-w>", move_obj)
-game_sc.bind_all("<KeyPress-w>", move_obj)
+game_sc.bind_all("<KeyPress-a>", move_obj)
+game_sc.bind_all("<KeyPress-s>", move_obj)
+game_sc.bind_all("<KeyPress-d>", move_obj)
+
+dx, rotate = 0, False
 
 while app_running:
     if app_running:
+        # move x
+        figure_old = deepcopy(figure)
+        for i in range(4):
+            figure[i][0] += dx
+            if not checkborders():
+                figure = deepcopy(figure_old)
+        # move y
+        anim_count += anim_speed
+        if anim_count > anim_limit:
+            anim_count = 0
+            figure_old = deepcopy(figure)
+            for i in range(4):
+                figure[i][1] += 1
+                if not checkborders():
+                    for j in range(4):
+                        field[figure_old[j][1]][figure_old[j][0]] = color
+                    figure, color = next_figure, next_color
+                    next_figure, next_color = deepcopy(choice(figures)), get_color()
+                    anim_limit = 2000
+                    break
+        # rotate
+        center = figure[0]
+        figure_old = deepcopy(figure)
+        if rotate:
+            for i in range(4):
+                x = figure[i][1] - center[1]
+                y = figure[i][0] - center[0]
+                figure[i][0] = center[0] - x
+                figure[i][1] = center[1] + y
+                if not checkborders():
+                    figure = deepcopy(figure_old)
+                    break
+        # check lines
+        line, lines = H - 1, 0
+        for row in range(H - 1, -1, -1):
+            count = 0
+            for i in range(W):
+                if field[row][i]:
+                    count += 1
+                field[line][i] = field[row][i]
+            if count < W:
+                line -= 1
+            else:
+                anim_speed += 3
+                lines += 1
+        # compute score
+        score += scores[lines]
+
+        fig = []
+        # draw figure
+        for i in range(4):
+            figure_rect_x = figure[i][0] * TILE
+            figure_rect_y = figure[i][1] * TILE
+            fig.append(
+                game_sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
+                                         fill=color))
+
+        dx, rotate = 0, False
         master.update_idletasks()
         master.update()
-
-
-#mainloop()
+        for id_fig in fig:
+            game_sc.delete(id_fig)
+    time.sleep(0.01)
+# mainloop()
