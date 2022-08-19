@@ -10,9 +10,15 @@ from copy import deepcopy
 def close_window():
     if messagebox.askokcancel("", "Выйти из приложения?"):
         master.destroy()
+        app_running = False
         app_info["record"] = record
-        with open('app_info.json', 'w') as f:
-            json.dump(app_info, f)
+        set_record()
+
+
+def set_record():
+    app_info["record"] = max(record, score)
+    with open('app_info.json', 'w') as f:
+        json.dump(app_info, f)
 
 
 def get_color():
@@ -20,7 +26,8 @@ def get_color():
 
 
 def game_over():
-    global grid
+    global grid#, app_running
+    #app_running = False
     for i in grid:
         master.after(1, game_sc.itemconfigure(i, fill=get_color()))
 
@@ -34,6 +41,7 @@ RES = 750, 940
 FPS = 60
 score = 0
 record = app_info["record"]
+app_running = True
 
 pyglet.font.add_file("font/font.ttf")
 master = Tk()
@@ -54,12 +62,6 @@ game_sc.create_image(0, 0, anchor=NW, image=img_obj2)
 grid = [game_sc.create_rectangle(x * TILE, y * TILE, x * TILE + TILE, y * TILE + TILE) for x in range(W) for y in
         range(H)]
 
-sc.create_text(505, 30, text="TETRIS", fill="#1a9f2c", font=("a_BighausTitul", 55), anchor=NW)
-sc.create_text(530, 650, text="Record:", fill="#f4e635", font=("a_BighausTitul", 35), anchor=NW)
-sc.create_text(525, 780, text="Score:", fill="#23d13b", font=("a_BighausTitul", 35), anchor=NW)
-sc.create_text(530, 710, text=str(record), fill="#f4e635", font=("a_BighausTitul", 32), anchor=NW)
-sc.create_text(525, 840, text=str(score), fill="#23d13b", font=("a_BighausTitul", 32), anchor=NW)
-
 figures_pos = [[(-1, 0), (-2, 0), (0, 0), (1, 0)],
                [(0, -1), (-1, -1), (-1, 0), (0, 0)],
                [(-1, 0), (-1, 1), (0, 0), (0, -1)],
@@ -67,23 +69,64 @@ figures_pos = [[(-1, 0), (-2, 0), (0, 0), (1, 0)],
                [(0, 0), (0, -1), (0, 1), (-1, -1)],
                [(0, 0), (0, -1), (0, 1), (1, -1)],
                [(0, 0), (0, -1), (0, 1), (-1, 0)]]
-figures = [[(x + W // 2, y + 1, 1, 1) for x, y in fig_pos] for fig_pos in figures_pos]
+figures = [[[x + W // 2, y + 1, 1, 1] for x, y in fig_pos] for fig_pos in figures_pos]
 field = [[0 for i in range(W)] for j in range(H)]
+
+anim_count, anim_speed, anim_limit = 0, 60, 2000
+scores = {0: 0, 1: 100, 2: 300, 3: 700, 4: 1500}
+
+sc.create_text(505, 30, text="TETRIS", fill="#1a9f2c", font=("a_BighausTitul", 55), anchor=NW)
+sc.create_text(530, 650, text="Record:", fill="#f4e635", font=("a_BighausTitul", 35), anchor=NW)
+sc.create_text(525, 780, text="Score:", fill="#23d13b", font=("a_BighausTitul", 35), anchor=NW)
+sc.create_text(530, 710, text=str(record), fill="#f4e635", font=("a_BighausTitul", 32), anchor=NW)
+sc.create_text(525, 840, text=str(score), fill="#23d13b", font=("a_BighausTitul", 32), anchor=NW)
 
 figure, next_figure = deepcopy(choice(figures)), deepcopy(choice(figures))
 color, next_color = get_color(), get_color()
 
-for i in range(4):
-    figure_rect_x = figure[i][0] * TILE
-    figure_rect_y = figure[i][1] * TILE
-    game_sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
-                             fill=color)
 
-for i in range(4):
-    figure_rect_x = next_figure[i][0] * TILE + 380
-    figure_rect_y = next_figure[i][1] * TILE + 185
-    sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
-                             fill=next_color)
+# for i in range(4):
+#     figure_rect_x = figure[i][0] * TILE
+#     figure_rect_y = figure[i][1] * TILE
+#     game_sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
+#                              fill=color)
+#
+# for i in range(4):
+#     figure_rect_x = next_figure[i][0] * TILE + 380
+#     figure_rect_y = next_figure[i][1] * TILE + 185
+#     sc.create_rectangle(figure_rect_x, figure_rect_y, figure_rect_x + TILE, figure_rect_y + TILE,
+#                         fill=next_color)
 
 
-mainloop()
+def checkborders():
+    if figure[i][0] < 0 or figure[i][0] > W - 1:
+        return False
+    elif figure[i][1] > H - 1 or field[figure[i][1]][figure[i][0]]:
+        return False
+    return True
+
+
+def move_obj(event):
+    global anim_limit, dx, rotate
+    if event.keysym == "w":
+        rotate = True
+    if event.keysym == "a":
+        dx = -1
+    if event.keysym == "s":
+        anim_limit = 100
+    if event.keysym == "d":
+        dx = 1
+
+
+game_sc.bind_all("<KeyPress-w>", move_obj)
+game_sc.bind_all("<KeyPress-w>", move_obj)
+game_sc.bind_all("<KeyPress-w>", move_obj)
+game_sc.bind_all("<KeyPress-w>", move_obj)
+
+while app_running:
+    if app_running:
+        master.update_idletasks()
+        master.update()
+
+
+#mainloop()
